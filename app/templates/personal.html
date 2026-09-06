@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LedgerMind Personal</title>
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#6b7688;--nav:#17365D;--line:#e5eaf0;
+  --good:#1f7a55;--warn:#a86600;--bad:#a33a3a;
+  --Housing:#4f46e5;--Utilities:#0ea5e9;--Groceries:#16a34a;--Restaurants:#f97316;
+  --Transportation:#64748b;--Insurance:#8b5cf6;--Subscriptions:#ec4899;--Shopping:#eab308;
+  --Childcare:#14b8a6;--Income:#22c55e;--Transfers:#94a3b8;--Other:#a1a1aa;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--nav);color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;gap:18px}
+.brand h1{margin:0;font-size:24px}.brand div{opacity:.8;font-size:12px;margin-top:3px}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+nav button,.primary,.secondary{border:0;border-radius:8px;padding:10px 13px;cursor:pointer}
+nav button{background:#ffffff16;color:white}.primary{background:var(--nav);color:#fff}.secondary{background:#e9eef5;color:var(--ink)}
+main{max-width:1280px;margin:auto;padding:26px}
+.view{display:none}.view.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.card,.panel{background:var(--panel);border-radius:12px;padding:16px;box-shadow:0 2px 12px #14203610}
+.metric{font-size:25px;font-weight:750;margin-top:5px}.label{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.7fr 1fr;gap:16px}.panel h2,.panel h3{margin-top:0}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+th{background:#eaf0f7}.money{text-align:right}
+.pill{padding:4px 8px;border-radius:999px;font-size:11px;background:#edf2f7;display:inline-block}
+.catbadge{padding:4px 8px;border-radius:999px;font-size:11px;color:white;font-weight:700;display:inline-block}
+.providerBtn{width:100%;margin:6px 0;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.providerStatus{margin-top:10px;padding:10px;border-radius:8px;background:#f2f6fa}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.suggestion{border:1px solid #d7e0ea;background:white;color:var(--ink);border-radius:999px;padding:7px 10px;cursor:pointer;font-size:12px}
+.answerMeta{margin-top:8px;padding-top:8px;border-top:1px solid #dce5ef;font-size:11px;color:var(--muted)}
+.txrefs{margin-top:8px;font-size:12px;color:var(--muted)}
+.txref{display:inline-block;background:#f4f7fa;padding:4px 7px;border-radius:6px;margin:2px}
+.memoryCard{border-left:4px solid #17365D;background:#f8fafc;padding:12px;border-radius:8px;margin:10px 0}
+.forecast{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.forecast .card{box-shadow:none;border:1px solid var(--line)}
+.briefing{line-height:1.55}.briefing ul{padding-left:18px}
+.ruleTag{display:inline-block;padding:3px 7px;background:#eef4fb;border-radius:999px;font-size:11px;margin:2px}
+.actionItem{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.actionItem:last-child{border-bottom:0}
+.goalRow{margin:16px 0}.goalHead{display:flex;justify-content:space-between;gap:12px}.goalTrack{height:10px;background:#e7edf3;border-radius:8px;overflow:hidden;margin-top:6px}.goalFill{height:100%;background:#17365D}
+.networthGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.asset{color:#1f7a55}.liability{color:#a33a3a}
+@media(max-width:900px){.networthGrid{grid-template-columns:1fr}}
+
+
+
+.connectedDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1f7a55;margin-right:6px}
+.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.row{margin:14px 0}.rowtop{display:flex;justify-content:space-between;gap:15px}
+.bar{height:10px;background:#e8edf3;border-radius:10px;overflow:hidden;margin-top:5px}
+.fill{height:100%;background:var(--nav)}
+.connect{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.connect .panel{min-height:150px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #ccd5df;border-radius:8px;margin:5px 0 10px;background:white}
+.small{font-size:12px;color:var(--muted)}
+.notice{background:#fff8e8;border:1px solid #efd69e;border-radius:10px;padding:12px;margin-bottom:16px}
+.ai{background:#eef4fb;border-radius:10px;padding:13px;margin:10px 0}
+.chartWrap{width:100%;height:260px;position:relative}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.legendItem{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.legendDot{width:10px;height:10px;border-radius:50%}
+.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.insight{background:#fff;border-radius:12px;padding:15px;box-shadow:0 2px 12px #14203610}
+.insight b{display:block;margin-bottom:5px}
+.budgetRow{margin:15px 0}.budgetTrack{height:9px;background:#e7edf3;border-radius:8px;overflow:hidden}.budgetFill{height:100%;border-radius:8px}
+@media(max-width:900px){.insights{grid-template-columns:1fr}}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.grid,.connect{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>LedgerMind Personal</h1><div>Household financial intelligence prototype</div></div>
+  <nav>
+    <button onclick="show('dashboard')">Dashboard</button>
+    <button onclick="show('transactions')">Transactions</button>
+    <button onclick="show('analysis')">Analysis</button><button onclick="show('intelligence')">Intelligence</button><button onclick="show('wealth')">Net Worth & Goals</button><button onclick="show('profiles')">Profiles</button>
+    <button onclick="show('connections')">Connections</button>
+  </nav>
+</header>
+
+<main>
+<section id="dashboard" class="view active">
+  <div class="notice"><b>Prototype mode:</b> this site uses sample data only. The connection buttons simulate the future Plaid/email flow and do not request real banking credentials.</div>
+  <div class="cards" id="cards"></div>
+  <div class="grid">
+    <div class="panel"><h2>Where your money went</h2><div id="categoryBars"></div></div>
+    <div class="panel">
+      <h2>LedgerMind summary</h2>
+      <div class="ai" id="summaryText"></div>
+      <button class="primary" onclick="generateSummary()">Refresh analysis</button>
+    </div>
+  </div>
+</section>
+
+<section id="transactions" class="view">
+  <div class="panel">
+    <h2>Transactions</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th class="money">Amount</th><th>Confidence</th><th></th></tr></thead>
+      <tbody id="txBody"></tbody>
+    </table>
+  </div>
+  <div class="panel" id="editor" style="display:none">
+    <h3>Correct transaction</h3>
+    <div id="selectedTx"></div>
+    <label>Category</label>
+    <select id="categorySelect">
+      <option>Housing</option><option>Utilities</option><option>Groceries</option><option>Restaurants</option>
+      <option>Transportation</option><option>Insurance</option><option>Subscriptions</option><option>Shopping</option>
+      <option>Childcare</option><option>Income</option><option>Transfers</option><option>Other</option>
+    </select>
+    <label>Note</label><textarea id="correctionNote" placeholder="Optional context LedgerMind should remember"></textarea>
+    <button class="primary" onclick="saveCorrection()">Save correction</button>
+  </div>
+</section>
+
+<section id="analysis" class="view">
+  <div class="cards">
+    <div class="card"><div class="label">Fixed spending</div><div class="metric" id="fixedMetric"></div></div>
+    <div class="card"><div class="label">Discretionary</div><div class="metric" id="discMetric"></div></div>
+    <div class="card"><div class="label">Savings rate</div><div class="metric" id="saveMetric"></div></div>
+    <div class="card"><div class="label">Recurring bills</div><div class="metric">7</div></div>
+    <div class="card"><div class="label">Needs review</div><div class="metric">1</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Monthly cash-flow trend</h2>
+      <div class="chartWrap"><canvas id="trendChart"></canvas></div>
+      <div class="legend"><div class="legendItem"><span class="legendDot" style="background:#17365D"></span>Income</div><div class="legendItem"><span class="legendDot" style="background:#94a3b8"></span>Spending</div></div>
+    </div>
+    <div class="panel">
+      <h2>Spending mix</h2>
+      <div class="chartWrap"><canvas id="donutChart"></canvas></div>
+      <div id="donutLegend" class="legend"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="panel">
+      <h2>Budget / commitment view</h2>
+      <div id="budgetRows"></div>
+    </div>
+    <div class="panel">
+      <h2>Ask LedgerMind</h2>
+      <input id="question" placeholder="e.g. What did I spend on food this month?">
+      <button class="primary" onclick="ask()">Ask</button>
+      <div class="suggestions">
+        <button class="suggestion" onclick="quickAsk('What increased this month?')">What increased?</button>
+        <button class="suggestion" onclick="quickAsk('What is my true housing cost?')">True housing cost</button>
+        <button class="suggestion" onclick="quickAsk('Compare restaurants over six months')">Restaurant trend</button>
+        <button class="suggestion" onclick="quickAsk('What could I cut?')">What could I cut?</button>
+        <button class="suggestion" onclick="quickAsk('What payments look unusual?')">Unusual payments</button>
+      </div>
+      <div id="answer" class="ai">Ask a question about your spending. LedgerMind will show the calculation and the transactions behind the answer.</div>
+      <h3 style="margin-top:20px">Recurring expenses</h3>
+      <p><b>Mortgage</b><br><span class="small">$1,700 biweekly</span></p>
+      <p><b>Rogers</b><br><span class="small">$226 monthly</span></p>
+      <p><b>Hydro</b><br><span class="small">$143 monthly average</span></p>
+      <p><b>Insurance</b><br><span class="small">$188 monthly</span></p>
+    </div>
+  </div>
+
+  <div class="insights" id="insightCards"></div>
+</section>
+
+<section id="intelligence" class="view">
+  <div class="cards">
+    <div class="card"><div class="label">Known merchants</div><div class="metric" id="knownMerchants">0</div></div>
+    <div class="card"><div class="label">Learned corrections</div><div class="metric" id="learnedCorrections">0</div></div>
+    <div class="card"><div class="label">Expected monthly bills</div><div class="metric" id="expectedBills">$0</div></div>
+    <div class="card"><div class="label">Forecast month-end spend</div><div class="metric" id="forecastSpend">$0</div></div>
+    <div class="card"><div class="label">Forecast cash flow</div><div class="metric" id="forecastCash">$0</div></div>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <h2>Weekly / monthly briefing</h2>
+      <div id="briefing" class="briefing"></div>
+      <button class="primary" onclick="renderBriefing()">Refresh briefing</button>
+    </div>
+    <div class="panel">
+      <h2>LedgerMind memory</h2>
+      <div class="small">Corrections become scoped merchant/category preferences. They do not automatically override every future transaction.</div>
+      <div id="memoryList"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h2>Sandbox lifecycle</h2>
+    <div class="small">Use these controls to exercise the whole persistent backend: reset → inspect state → run evidence/anomaly cycle → correct a transaction → inspect updated state.</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="primary" onclick="sandboxState()">Refresh backend state</button>
+      <button class="secondary" onclick="sandboxCycle()">Run full demo cycle</button>
+      <button class="secondary" onclick="sandboxReset()">Reset sandbox</button>
+    </div>
+    <div id="sandboxResult" class="ai">When served through FastAPI, this panel reports live counts from the SQLite database.</div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h2>Ingestion & evidence pipeline</h2>
+    <div class="small">Bank transaction → merchant normalization → category/memory → receipt evidence → confidence → recurring/anomaly analysis.</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="primary" onclick="seedEvidence()">Add sample receipt</button>
+      <button class="secondary" onclick="runEvidenceMatch()">Match evidence</button>
+      <button class="secondary" onclick="runAnomalies()">Run anomaly scan</button>
+    </div>
+    <div id="pipelineResult" class="ai">Pipeline controls use the v0.8 backend when this page is served through FastAPI.</div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h2>Upcoming commitments</h2>
+    <div class="forecast" id="commitmentCards"></div>
+  </div>
+</section>
+
+<section id="wealth" class="view">
+  <div class="cards">
+    <div class="card"><div class="label">Net worth</div><div class="metric" id="netWorthMetric"></div></div>
+    <div class="card"><div class="label">Assets</div><div class="metric asset" id="assetsMetric"></div></div>
+    <div class="card"><div class="label">Debt</div><div class="metric liability" id="debtMetric"></div></div>
+    <div class="card"><div class="label">Monthly debt payments</div><div class="metric" id="debtPaymentMetric"></div></div>
+    <div class="card"><div class="label">Goals funded</div><div class="metric" id="goalsMetric"></div></div>
+  </div>
+
+  <div class="networthGrid">
+    <div class="panel">
+      <h2>Assets & liabilities</h2>
+      <div id="accountList"></div>
+    </div>
+    <div class="panel">
+      <h2>Goals</h2>
+      <div id="goalList"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="panel">
+      <h2>Next actions</h2>
+      <div id="nextActions"></div>
+    </div>
+    <div class="panel">
+      <h2>Alerts</h2>
+      <div id="alerts"></div>
+    </div>
+  </div>
+</section>
+
+<section id="profiles" class="view">
+  <div class="panel">
+    <h2>Financial profiles</h2>
+    <div class="small">Profiles control accounting and tax treatment. The payment account and the economic owner are separate concepts.</div>
+    <div id="profilesList" style="margin-top:14px"></div>
+  </div>
+  <div class="grid" style="margin-top:16px">
+    <div class="panel">
+      <h2>Create profile</h2>
+      <input id="profileName" placeholder="Profile name">
+      <select id="profileType">
+        <option value="personal">Personal household</option>
+        <option value="sole_proprietor">Sole proprietor</option>
+        <option value="corporation">Corporation</option>
+        <option value="rental">Rental property</option>
+      </select>
+      <button class="primary" onclick="createProfile()">Create profile</button>
+      <div id="profileCreateResult" class="ai">The profile type determines the rule regime used downstream.</div>
+    </div>
+    <div class="panel">
+      <h2>Treatment boundaries</h2>
+      <div class="small" style="margin-bottom:10px">The profile now changes the actual accounting decision engine—not just labels or filters.</div>
+      <div class="memoryCard"><b>Personal</b><div class="small">Cash flow, categories, goals, net worth. No bookkeeping/tax deduction engine by default.</div></div>
+      <div class="memoryCard"><b>Sole proprietor</b><div class="small">Business accounting, mixed-use allocations, T2125-oriented tax treatment, GST/HST context.</div></div>
+      <div class="memoryCard"><b>Corporation</b><div class="small">Corporate bookkeeping, T2/GIFI context, shareholder/employee treatment when personal use is involved.</div></div>
+      <div class="memoryCard"><b>Rental property</b><div class="small">Property-specific income/expenses, repairs vs improvements, T776-oriented treatment.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="connections" class="view">
+  <div class="connect">
+    <div class="panel"><h3>Bank accounts</h3><p class="small">Future live connection through Plaid or another Canadian bank-data provider.</p><button class="primary" onclick="simulateConnect('Bank')">Connect bank</button><div id="BankStatus"></div></div>
+    <div class="panel">
+      <h3>Email</h3>
+      <p class="small">Connect a mailbox to find receipts, bills, invoices and confirmations. The production version will use OAuth consent rather than your email password.</p>
+      <button class="secondary providerBtn" onclick="connectEmail('Gmail')"><span>Connect Gmail</span><span>→</span></button>
+      <button class="secondary providerBtn" onclick="connectEmail('Outlook')"><span>Connect Outlook / Microsoft 365</span><span>→</span></button>
+      <div id="EmailStatus"></div>
+    </div>
+    <div class="panel"><h3>Mortgage / loans</h3><p class="small">Link recurring debt payments and calculate true housing costs.</p><button class="secondary" onclick="simulateConnect('Mortgage')">Add mortgage</button><div id="MortgageStatus"></div></div>
+    <div class="panel"><h3>Investments</h3><p class="small">Future portfolio integration for household net-worth and cash-flow analysis.</p><button class="secondary" onclick="simulateConnect('Investments')">Add account</button><div id="InvestmentsStatus"></div></div>
+  </div>
+</section>
+</main>
+
+<script>
+let transactions=[
+ {id:1,date:'2026-09-01',merchant:'Mortgage Payment',category:'Housing',amount:-1700,confidence:1},
+ {id:2,date:'2026-09-01',merchant:'Payroll Deposit',category:'Income',amount:3250,confidence:1},
+ {id:3,date:'2026-09-02',merchant:'Food Basics',category:'Groceries',amount:-126.42,confidence:.99},
+ {id:4,date:'2026-09-02',merchant:'Rogers',category:'Utilities',amount:-226,confidence:.92},
+ {id:5,date:'2026-09-03',merchant:'Hydro One',category:'Utilities',amount:-143.18,confidence:.99},
+ {id:6,date:'2026-09-03',merchant:'Netflix',category:'Subscriptions',amount:-22.59,confidence:.99},
+ {id:7,date:'2026-09-04',merchant:'Shell',category:'Transportation',amount:-78.33,confidence:.95},
+ {id:8,date:'2026-09-04',merchant:'Restaurant',category:'Restaurants',amount:-84.16,confidence:.82},
+ {id:9,date:'2026-09-05',merchant:'Amazon',category:'Shopping',amount:-119.99,confidence:.71},
+ {id:10,date:'2026-09-05',merchant:'Insurance',category:'Insurance',amount:-188,confidence:.98},
+ {id:11,date:'2026-09-06',merchant:'Costco',category:'Groceries',amount:-212.64,confidence:.86},
+ {id:12,date:'2026-09-06',merchant:'Interac Transfer',category:'Transfers',amount:-300,confidence:.67},
+];
+const cats=['Housing','Utilities','Groceries','Restaurants','Transportation','Insurance','Subscriptions','Shopping','Childcare','Transfers','Other'];
+let selected=null;
+const monthlyHistory=[
+ {month:'Apr',income:6200,spending:4820,categories:{Housing:3400,Utilities:390,Groceries:650,Restaurants:190,Transportation:190}},
+
+ {month:'May',income:6400,spending:5150,categories:{Housing:3400,Utilities:415,Groceries:725,Restaurants:265,Transportation:210}},
+ {month:'Jun',income:6250,spending:4725,categories:{Housing:3400,Utilities:370,Groceries:610,Restaurants:145,Transportation:200}},
+ {month:'Jul',income:6600,spending:5435,categories:{Housing:3400,Utilities:445,Groceries:790,Restaurants:315,Transportation:245}},
+ {month:'Aug',income:6500,spending:4970,categories:{Housing:3400,Utilities:405,Groceries:690,Restaurants:225,Transportation:250}},
+ {month:'Sep',income:6500,spending:0,categories:{}}
+];
+const monthlyBudgets={Housing:3600,Utilities:500,Groceries:900,Restaurants:350,Transportation:450,Insurance:250,Subscriptions:120,Shopping:500};
+const recurringCommitments=[
+ {merchant:'Mortgage Payment',category:'Housing',amount:1700,cadence:'biweekly',next:'2026-09-15'},
+ {merchant:'Rogers',category:'Utilities',amount:226,cadence:'monthly',next:'2026-10-02'},
+ {merchant:'Hydro One',category:'Utilities',amount:143.18,cadence:'monthly',next:'2026-10-03'},
+ {merchant:'Netflix',category:'Subscriptions',amount:22.59,cadence:'monthly',next:'2026-10-03'},
+ {merchant:'Insurance',category:'Insurance',amount:188,cadence:'monthly',next:'2026-10-05'}
+];
+let merchantMemory=JSON.parse(localStorage.getItem('lm_merchant_memory')||'{}');
+const financialAccounts=[
+ {name:'Chequing',type:'asset',balance:4850},
+ {name:'Savings',type:'asset',balance:18200},
+ {name:'Investments',type:'asset',balance:41750},
+ {name:'Home (estimated)',type:'asset',balance:460000},
+ {name:'Mortgage',type:'liability',balance:372000,payment:3683},
+ {name:'Credit Card',type:'liability',balance:1290,payment:0}
+];
+const goals=[
+ {name:'Emergency fund',target:20000,current:18200},
+ {name:'Travel fund',target:5000,current:2150},
+ {name:'Extra mortgage principal',target:10000,current:1250}
+];
+
+const money=n=>new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(n||0);
+const categoryColors={
+ Housing:'#4f46e5',Utilities:'#0ea5e9',Groceries:'#16a34a',Restaurants:'#f97316',
+ Transportation:'#64748b',Insurance:'#8b5cf6',Subscriptions:'#ec4899',Shopping:'#eab308',
+ Childcare:'#14b8a6',Income:'#22c55e',Transfers:'#94a3b8',Other:'#a1a1aa'
+};
+const catColor=c=>categoryColors[c]||categoryColors.Other;
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function calc(){
+ let income=0, spend=0, by={};
+ transactions.forEach(t=>{
+   if(t.amount>0 && t.category==='Income') income+=t.amount;
+   if(t.amount<0){spend+=Math.abs(t.amount);by[t.category]=(by[t.category]||0)+Math.abs(t.amount);}
+ });
+ let fixed=['Housing','Utilities','Insurance','Subscriptions'].reduce((s,c)=>s+(by[c]||0),0);
+ return {income,spend,by,fixed,disc:spend-fixed,net:income-spend};
+}
+function render(){
+ let x=calc();
+ let cards=[['Income',x.income],['Spending',x.spend],['Net cash flow',x.net],['Fixed',x.fixed],['Discretionary',x.disc]];
+ document.getElementById('cards').innerHTML=cards.map(c=>`<div class=card><div class=label>${c[0]}</div><div class=metric>${money(c[1])}</div></div>`).join('');
+ let max=Math.max(1,...Object.values(x.by));
+ document.getElementById('categoryBars').innerHTML=Object.entries(x.by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class=row><div class=rowtop><b>${k}</b><span>${money(v)}</span></div><div class=bar><div class=fill style="width:${v/max*100}%;background:${catColor(k)}"></div></div></div>`).join('');
+ document.getElementById('txBody').innerHTML=transactions.map(t=>`<tr><td>${t.date}</td><td>${t.merchant}</td><td><span class=catbadge style="background:${catColor(t.category)}">${t.category}</span></td><td class=money>${money(t.amount)}</td><td>${Math.round(t.confidence*100)}%</td><td><button class=secondary onclick="editTx(${t.id})">Review</button></td></tr>`).join('');
+ document.getElementById('fixedMetric').textContent=money(x.fixed);
+ document.getElementById('discMetric').textContent=money(x.disc);
+ document.getElementById('saveMetric').textContent=x.income?Math.max(0,(x.net/x.income*100)).toFixed(1)+'%':'0%';
+ transactions.forEach(t=>{
+   const mem=merchantMemory[t.merchant];
+   if(mem && t.confidence<0.9 && t.category!==mem.category){
+      t.category=mem.category; t.confidence=.93;
+   }
+ });
+ x=calc();
+ monthlyHistory[monthlyHistory.length-1].spending=x.spend;
+ generateSummary();
+ drawTrend();
+ drawDonut();
+ renderBudgets();
+ renderInsights();
+ renderIntelligence();
+ renderWealth();
+}
+function generateSummary(){
+ let x=calc(), food=(x.by.Groceries||0)+(x.by.Restaurants||0), house=(x.by.Housing||0)+(x.by.Utilities||0)+(x.by.Insurance||0);
+ document.getElementById('summaryText').innerHTML=`You have received <b>${money(x.income)}</b> and spent <b>${money(x.spend)}</b> in this sample period. Housing-related costs are <b>${money(house)}</b>. Food spending is <b>${money(food)}</b>. ${x.net>=0?'Cash flow is currently positive.':'Spending currently exceeds recorded income.'}`;
+}
+function editTx(id){
+ selected=transactions.find(t=>t.id===id);
+ document.getElementById('editor').style.display='block';
+ document.getElementById('selectedTx').innerHTML=`<p><b>${selected.merchant}</b> — ${money(selected.amount)}</p>`;
+ document.getElementById('categorySelect').value=selected.category;
+}
+function saveCorrection(){
+ if(!selected)return;
+ const prior=selected.category;
+ selected.category=document.getElementById('categorySelect').value;
+ selected.confidence=1;
+ localStorage.setItem('lm_corrections',JSON.stringify(transactions));
+ if(prior!==selected.category){
+   merchantMemory[selected.merchant]={category:selected.category,source:'user correction',updated:new Date().toISOString(),scope:'merchant preference'};
+   localStorage.setItem('lm_merchant_memory',JSON.stringify(merchantMemory));
+ }
+ render();
+ document.getElementById('editor').style.display='none';
+}
+function simulateConnect(kind){
+ document.getElementById(kind+'Status').innerHTML='<div class="providerStatus"><span class="connectedDot"></span><b>Demo connection ready.</b><div class="small">A deployed secure version would open the provider authorization flow here.</div></div>';
+}
+function connectEmail(provider){
+ document.getElementById('EmailStatus').innerHTML=
+   `<div class="providerStatus"><b>${provider} connection selected.</b>
+    <div class="small">Prototype only: the live version will open ${provider}'s OAuth consent screen and request read-only mail access. LedgerMind will never ask you to type your email password into this page.</div>
+    <div style="margin-top:8px"><span class="pill">Receipts</span> <span class="pill">Invoices</span> <span class="pill">Bills</span></div>
+   </div>`;
+}
+
+function setupCanvas(id){
+ const c=document.getElementById(id); if(!c)return null;
+ const dpr=window.devicePixelRatio||1, rect=c.getBoundingClientRect();
+ c.width=rect.width*dpr; c.height=rect.height*dpr;
+ const ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+ return {c,ctx,w:rect.width,h:rect.height};
+}
+function drawTrend(){
+ const s=setupCanvas('trendChart'); if(!s)return;
+ const {ctx,w,h}=s, pad=36, max=Math.max(...monthlyHistory.flatMap(m=>[m.income,m.spending]))*1.12;
+ ctx.clearRect(0,0,w,h); ctx.font='12px Arial'; ctx.fillStyle='#6b7688'; ctx.strokeStyle='#e5eaf0'; ctx.lineWidth=1;
+ for(let i=0;i<4;i++){let y=pad+(h-pad*2)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();}
+ const step=(w-pad*2)/(monthlyHistory.length-1);
+ function line(key,color){
+   ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();
+   monthlyHistory.forEach((m,i)=>{let x=pad+i*step,y=h-pad-(m[key]/max)*(h-pad*2);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+   ctx.stroke();
+   ctx.fillStyle=color;
+   monthlyHistory.forEach((m,i)=>{let x=pad+i*step,y=h-pad-(m[key]/max)*(h-pad*2);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill()});
+ }
+ line('income','#17365D'); line('spending','#94a3b8');
+ ctx.fillStyle='#6b7688';ctx.textAlign='center';
+ monthlyHistory.forEach((m,i)=>ctx.fillText(m.month,pad+i*step,h-10));
+}
+function drawDonut(){
+ const s=setupCanvas('donutChart'); if(!s)return;
+ const {ctx,w,h}=s,x=calc(), entries=Object.entries(x.by).filter(([,v])=>v>0), total=entries.reduce((a,[,v])=>a+v,0);
+ ctx.clearRect(0,0,w,h); if(!total)return;
+ let start=-Math.PI/2,cx=w/2,cy=h/2,r=Math.min(w,h)*.34;
+ entries.forEach(([k,v])=>{let a=v/total*Math.PI*2;ctx.beginPath();ctx.strokeStyle=catColor(k);ctx.lineWidth=28;ctx.arc(cx,cy,r,start,start+a);ctx.stroke();start+=a});
+ ctx.fillStyle='#172033';ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.fillText(money(total),cx,cy+3);
+ ctx.font='12px Arial';ctx.fillStyle='#6b7688';ctx.fillText('total spending',cx,cy+22);
+ document.getElementById('donutLegend').innerHTML=entries.map(([k,v])=>`<div class=legendItem><span class=legendDot style="background:${catColor(k)}"></span>${k} ${Math.round(v/total*100)}%</div>`).join('');
+}
+function renderBudgets(){
+ const x=calc();
+ document.getElementById('budgetRows').innerHTML=Object.entries(monthlyBudgets).map(([k,b])=>{
+   let used=x.by[k]||0,p=Math.min(100,used/b*100),status=p>100?'Over':p>80?'Watch':'On track';
+   return `<div class=budgetRow><div class=rowtop><b>${k}</b><span>${money(used)} / ${money(b)} · ${status}</span></div>
+   <div class=budgetTrack><div class=budgetFill style="width:${p}%;background:${catColor(k)}"></div></div></div>`;
+ }).join('');
+}
+function renderInsights(){
+ const x=calc(), food=(x.by.Groceries||0)+(x.by.Restaurants||0), house=(x.by.Housing||0)+(x.by.Utilities||0)+(x.by.Insurance||0);
+ const avgSpend=monthlyHistory.slice(0,-1).reduce((s,m)=>s+m.spending,0)/(monthlyHistory.length-1);
+ const diff=x.spend-avgSpend;
+ const top=Object.entries(x.by).sort((a,b)=>b[1]-a[1])[0]||['None',0];
+ const items=[
+   ['What changed', `${diff>=0?'Spending is '+money(diff)+' above':'Spending is '+money(Math.abs(diff))+' below'} the prior 5-month average.`],
+   ['Largest category', `${top[0]} is currently the largest category at ${money(top[1])}.`],
+   ['Household structure', `${money(house)} is tied to housing, utilities and insurance; food totals ${money(food)}.`]
+ ];
+ document.getElementById('insightCards').innerHTML=items.map(x=>`<div class=insight><b>${x[0]}</b><span class=small>${x[1]}</span></div>`).join('');
+}
+window.addEventListener('resize',()=>{drawTrend();drawDonut()});
+
+
+
+function renderWealth(){
+ const assets=financialAccounts.filter(a=>a.type==='asset').reduce((s,a)=>s+a.balance,0);
+ const debt=financialAccounts.filter(a=>a.type==='liability').reduce((s,a)=>s+a.balance,0);
+ const debtPmt=financialAccounts.filter(a=>a.type==='liability').reduce((s,a)=>s+(a.payment||0),0);
+ const funded=goals.reduce((s,g)=>s+Math.min(g.current/g.target,1),0)/goals.length*100;
+ document.getElementById('assetsMetric').textContent=money(assets);
+ document.getElementById('debtMetric').textContent=money(debt);
+ document.getElementById('netWorthMetric').textContent=money(assets-debt);
+ document.getElementById('debtPaymentMetric').textContent=money(debtPmt);
+ document.getElementById('goalsMetric').textContent=funded.toFixed(0)+'%';
+
+ document.getElementById('accountList').innerHTML=financialAccounts.map(a=>`
+  <div class=actionItem><div><b>${a.name}</b><div class=small>${a.type==='asset'?'Asset':'Liability'}</div></div>
+  <div class="${a.type==='asset'?'asset':'liability'}"><b>${money(a.balance)}</b></div></div>`).join('');
+
+ document.getElementById('goalList').innerHTML=goals.map(g=>{
+   let p=Math.min(100,g.current/g.target*100);
+   return `<div class=goalRow><div class=goalHead><b>${g.name}</b><span>${money(g.current)} / ${money(g.target)}</span></div>
+   <div class=goalTrack><div class=goalFill style="width:${p}%"></div></div><div class=small>${p.toFixed(0)}% funded</div></div>`;
+ }).join('');
+
+ renderActions();
+ renderAlerts();
+}
+function renderActions(){
+ const x=calc(), restaurant=x.by.Restaurants||0, shopping=x.by.Shopping||0;
+ const low=transactions.filter(t=>t.confidence<.75);
+ const actions=[];
+ if(low.length) actions.push({title:`Review ${low.length} uncertain transaction(s)`,detail:'Confirm categories so future analysis is more reliable.',priority:'Review'});
+ if(restaurant+shopping>300) actions.push({title:'Inspect discretionary spending',detail:`Restaurants + shopping currently total ${money(restaurant+shopping)}.`,priority:'Optional'});
+ const ef=goals.find(g=>g.name==='Emergency fund');
+ if(ef.current<ef.target) actions.push({title:'Emergency fund progress',detail:`${money(ef.target-ef.current)} remains to reach the current target.`,priority:'Goal'});
+ if(!actions.length) actions.push({title:'No urgent actions',detail:'No major issue is currently flagged in the sample data.',priority:'Clear'});
+ document.getElementById('nextActions').innerHTML=actions.map(a=>`<div class=actionItem><div><b>${a.title}</b><div class=small>${a.detail}</div></div><span class=ruleTag>${a.priority}</span></div>`).join('');
+}
+function renderAlerts(){
+ const alerts=[];
+ transactions.forEach(t=>{
+   if(t.confidence<.75) alerts.push(`${t.merchant}: classification confidence ${Math.round(t.confidence*100)}%.`);
+ });
+ recurringCommitments.forEach(r=>{
+   if(r.next==='2026-09-15') alerts.push(`${r.merchant}: ${money(r.amount)} expected on ${r.next}.`);
+ });
+ const cc=financialAccounts.find(a=>a.name==='Credit Card');
+ if(cc && cc.balance>1000) alerts.push(`Credit card balance is ${money(cc.balance)} in this sample profile.`);
+ document.getElementById('alerts').innerHTML=alerts.length?alerts.map(a=>`<div class=memoryCard>${a}</div>`).join(''):'<div class=memoryCard>No alerts.</div>';
+}
+
+function recurringMonthlyEquivalent(item){
+ if(item.cadence==='biweekly') return item.amount*26/12;
+ if(item.cadence==='weekly') return item.amount*52/12;
+ if(item.cadence==='annual') return item.amount/12;
+ return item.amount;
+}
+function renderIntelligence(){
+ const x=calc();
+ const monthlyBills=recurringCommitments.reduce((s,r)=>s+recurringMonthlyEquivalent(r),0);
+ const elapsedDays=6, daysInMonth=30;
+ const forecastSpend=x.spend/elapsedDays*daysInMonth;
+ const incomeForecast=Math.max(x.income,6500);
+ document.getElementById('knownMerchants').textContent=new Set(transactions.map(t=>t.merchant)).size;
+ document.getElementById('learnedCorrections').textContent=Object.keys(merchantMemory).length;
+ document.getElementById('expectedBills').textContent=money(monthlyBills);
+ document.getElementById('forecastSpend').textContent=money(forecastSpend);
+ document.getElementById('forecastCash').textContent=money(incomeForecast-forecastSpend);
+ document.getElementById('memoryList').innerHTML=Object.entries(merchantMemory).length?
+   Object.entries(merchantMemory).map(([m,v])=>`<div class=memoryCard><b>${m}</b><div>${v.category}</div><span class=ruleTag>${v.scope}</span><span class=ruleTag>${v.source}</span></div>`).join(''):
+   '<div class="memoryCard"><b>No learned corrections yet.</b><div class="small">Correct a transaction category and LedgerMind will retain the merchant preference locally in this browser.</div></div>';
+ document.getElementById('commitmentCards').innerHTML=recurringCommitments.map(r=>`<div class=card><div class=label>${r.category}</div><b>${r.merchant}</b><div class=metric style="font-size:19px">${money(r.amount)}</div><div class=small>${r.cadence} · next ${r.next}</div></div>`).join('');
+ renderBriefing();
+}
+function renderBriefing(){
+ const x=calc();
+ const avgSpend=monthlyHistory.slice(0,-1).reduce((s,m)=>s+m.spending,0)/(monthlyHistory.length-1);
+ const top=Object.entries(x.by).sort((a,b)=>b[1]-a[1])[0]||['None',0];
+ const lowConfidence=transactions.filter(t=>t.confidence<.75);
+ const upcoming=recurringCommitments.filter(r=>r.next.startsWith('2026-09'));
+ const food=(x.by.Groceries||0)+(x.by.Restaurants||0);
+ const difference=x.spend-avgSpend;
+ document.getElementById('briefing').innerHTML=`
+   <p><b>Financial snapshot</b></p>
+   <ul>
+     <li>Recorded income: <b>${money(x.income)}</b>; spending: <b>${money(x.spend)}</b>; net cash flow: <b>${money(x.net)}</b>.</li>
+     <li>Largest spending category: <b>${top[0]}</b> at ${money(top[1])}.</li>
+     <li>Food spending: ${money(food)}. Fixed commitments recorded so far: ${money(x.fixed)}.</li>
+     <li>Current spending is ${money(Math.abs(difference))} ${difference>=0?'above':'below'} the April–August monthly average. Because this sample only contains early-September transactions, the forecast is intentionally rough.</li>
+     <li>${lowConfidence.length} transaction(s) are below 75% classification confidence and deserve review.</li>
+     <li>${upcoming.length} known recurring commitment(s) remain later this month in the sample schedule.</li>
+   </ul>
+   <p class=small>Generated from the transactions, recurring-commitment list and historical sample aggregates currently loaded in this browser.</p>`;
+}
+
+function quickAsk(q){document.getElementById('question').value=q;ask()}
+function priorAverage(category){
+ const vals=monthlyHistory.slice(0,-1).map(m=>(m.categories||{})[category]||0);
+ return vals.reduce((a,b)=>a+b,0)/(vals.length||1);
+}
+function txRefs(list){
+ return list.slice(0,5).map(t=>`<span class=txref>${t.date} · ${t.merchant} · ${money(Math.abs(t.amount))}</span>`).join('');
+}
+function answerBox(text, refs=[], calcText='Calculated from the transactions currently loaded in this prototype.'){
+ return `${text}<div class=txrefs>${txRefs(refs)}</div><div class=answerMeta>${calcText}</div>`;
+}
+function ask(){
+ const q=document.getElementById('question').value.toLowerCase().trim(), x=calc();
+ const outflows=transactions.filter(t=>t.amount<0 && t.category!=='Transfers');
+ const refsFor=c=>outflows.filter(t=>t.category===c).sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+ const current=(c)=>x.by[c]||0;
+ let result='';
+ if(!q){result='Ask me a question about the sample transactions.';}
+ else if(q.includes('what increased')||q.includes('increase')){
+   let comparisons=['Utilities','Groceries','Restaurants','Transportation'].map(c=>({c,now:current(c),avg:priorAverage(c),diff:current(c)-priorAverage(c)})).sort((a,b)=>b.diff-a.diff);
+   let top=comparisons[0];
+   result=answerBox(`<b>${top.c}</b> shows the largest increase versus the prior five-month average: ${money(top.now)} now versus about ${money(top.avg)} previously, a difference of ${money(top.diff)}.`,refsFor(top.c),
+   'Comparison = current sample-period category total minus the average category total for April–August.');
+ }
+ else if(q.includes('true housing')||q.includes('housing cost')||q.includes('house cost')||q.includes('mortgage')){
+   let categories=['Housing','Utilities','Insurance'], total=categories.reduce((s,c)=>s+current(c),0);
+   let refs=outflows.filter(t=>categories.includes(t.category));
+   result=answerBox(`Your broader housing-related cost in this sample period is <b>${money(total)}</b>: ${money(current('Housing'))} housing, ${money(current('Utilities'))} utilities and ${money(current('Insurance'))} insurance.`,refs,
+   'This definition currently includes Housing + Utilities + Insurance. Maintenance, property tax and other home costs would be added automatically when present.');
+ }
+ else if(q.includes('restaurant')&&(q.includes('compare')||q.includes('six')||q.includes('trend'))){
+   let vals=monthlyHistory.slice(0,-1).map(m=>({month:m.month,val:(m.categories||{}).Restaurants||0}));
+   vals.push({month:'Sep',val:current('Restaurants')});
+   let avg=vals.slice(0,-1).reduce((s,a)=>s+a.val,0)/(vals.length-1);
+   result=answerBox(`Restaurant spending was ${vals.map(v=>`${v.month} ${money(v.val)}`).join(', ')}. The April–August average was <b>${money(avg)}</b>; the current sample period is <b>${money(current('Restaurants'))}</b>.`,refsFor('Restaurants'),
+   'Historical values are sample monthly aggregates; September comes from the currently loaded transaction list.');
+ }
+ else if(q.includes('cut')||q.includes('reduce')||q.includes('save money')){
+   const discretionary=['Restaurants','Shopping','Subscriptions','Other'].map(c=>[c,current(c)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+   const total=discretionary.reduce((s,x)=>s+x[1],0);
+   let refs=outflows.filter(t=>discretionary.some(x=>x[0]===t.category)).sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+   result=answerBox(`The most adjustable spending currently totals <b>${money(total)}</b>. The largest discretionary categories are ${discretionary.slice(0,3).map(x=>`${x[0]} (${money(x[1])})`).join(', ')}. I would treat these as places to inspect, not automatic recommendations to eliminate.`,refs,
+   'Discretionary candidates are currently defined as Restaurants + Shopping + Subscriptions + Other.');
+ }
+ else if(q.includes('unusual')||q.includes('anomal')||q.includes('odd')){
+   const med=[...outflows].sort((a,b)=>Math.abs(a.amount)-Math.abs(b.amount));
+   const median=med.length?Math.abs(med[Math.floor(med.length/2)].amount):0;
+   const flagged=outflows.filter(t=>Math.abs(t.amount)>Math.max(250,median*3)||t.confidence<.75).sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+   result=answerBox(flagged.length?`I found <b>${flagged.length}</b> transaction(s) worth reviewing because they are large relative to the typical transaction or have low classification confidence.`:'I do not see a strong anomaly in the currently loaded sample.',flagged,
+   `Prototype anomaly rule: amount greater than max($250, 3× median outflow) OR category confidence below 75%. Median outflow is ${money(median)}.`);
+ }
+ else if(q.includes('food')){
+   let total=current('Groceries')+current('Restaurants');
+   result=answerBox(`Food spending totals <b>${money(total)}</b>: ${money(current('Groceries'))} groceries and ${money(current('Restaurants'))} restaurants.`,[...refsFor('Groceries'),...refsFor('Restaurants')]);
+ }
+ else if(q.includes('utilit')){
+   result=answerBox(`Utilities total <b>${money(current('Utilities'))}</b>.`,refsFor('Utilities'));
+ }
+ else if(q.includes('spend')||q.includes('cash flow')){
+   result=answerBox(`Total spending is <b>${money(x.spend)}</b>. Fixed spending is ${money(x.fixed)}, discretionary spending is ${money(x.disc)}, and recorded net cash flow is ${money(x.net)}.`,outflows.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount)));
+ }
+ else {
+   result='I can currently analyze increases, housing cost, restaurant trends, possible discretionary cuts, unusual payments, food, utilities, total spending and cash flow. The deployed version will send a structured summary of the transaction database to the language-model layer so broader questions can be answered without inventing values.';
+ }
+ document.getElementById('answer').innerHTML=result;
+}
+let saved=localStorage.getItem('lm_corrections'); if(saved) transactions=JSON.parse(saved);
+render();
+</script>
+
+<script>
+async function loadBackendV07(){
+  try{
+    const [d,t,w]=await Promise.all([
+      fetch('/api/v07/dashboard').then(r=>r.ok?r.json():Promise.reject()),
+      fetch('/api/v07/transactions').then(r=>r.ok?r.json():Promise.reject()),
+      fetch('/api/v07/wealth').then(r=>r.ok?r.json():Promise.reject())
+    ]);
+    if(Array.isArray(t) && t.length){
+      transactions=t.map(x=>({id:x.id,date:x.date,merchant:x.merchant,category:x.category,amount:x.amount,confidence:x.confidence}));
+      window.__LM_BACKEND_V07=true;
+      render();
+    }
+    return true;
+  }catch(e){ return false; }
+}
+const originalSaveCorrection=saveCorrection;
+saveCorrection=async function(){
+ if(!selected){return;}
+ if(window.__LM_BACKEND_V07){
+   const category=document.getElementById('categorySelect').value;
+   const note=document.getElementById('correctionNote').value||null;
+   const r=await fetch(`/api/v07/transactions/${selected.id}/category`,{
+     method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,note})
+   });
+   if(r.ok){
+     selected.category=category;selected.confidence=1;
+     document.getElementById('editor').style.display='none';
+     await loadBackendV07();
+     return;
+   }
+ }
+ return originalSaveCorrection();
+}
+loadBackendV07();
+</script>
+
+
+<script>
+async function seedEvidence(){
+ try{
+  const r=await fetch('/api/v08/evidence',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({provider:'demo_email',evidence_type:'receipt',merchant:'Amazon',amount:119.99,evidence_date:'2026-09-05',subject:'Your Amazon receipt',excerpt:'Order total CAD 119.99'})});
+  const d=await r.json();document.getElementById('pipelineResult').innerHTML=`Sample receipt stored as evidence #${d.id}.`;
+ }catch(e){document.getElementById('pipelineResult').textContent='Run the site through the v0.8 FastAPI backend to use evidence matching.'}
+}
+async function runEvidenceMatch(){
+ try{
+  const d=await fetch('/api/v08/evidence/match',{method:'POST'}).then(r=>r.json());
+  document.getElementById('pipelineResult').innerHTML=`Matched ${d.matches.length} evidence item(s). `+
+    d.matches.map(x=>`Evidence ${x.evidence_id} → transaction ${x.transaction_id} (${Math.round(x.score*100)}%)`).join('<br>');
+ }catch(e){document.getElementById('pipelineResult').textContent='Evidence matcher unavailable in standalone HTML mode.'}
+}
+async function runAnomalies(){
+ try{
+  const d=await fetch('/api/v08/insights/anomalies',{method:'POST'}).then(r=>r.json());
+  document.getElementById('pipelineResult').innerHTML=`Median outflow: ${money(d.median_outflow)}. Created ${d.created.length} review insight(s).`;
+ }catch(e){document.getElementById('pipelineResult').textContent='Anomaly engine unavailable in standalone HTML mode.'}
+}
+</script>
+
+
+<script>
+async function sandboxState(){
+ try{
+  const d=await fetch('/api/v09/state').then(r=>r.json());
+  document.getElementById('sandboxResult').innerHTML=
+   `Transactions: <b>${d.transactions.length}</b> · Evidence: <b>${d.counts.evidence}</b> · Corrections: <b>${d.counts.corrections}</b> · Learned merchants: <b>${d.counts.merchant_memory}</b> · Insights: <b>${d.counts.insights}</b> · Audit events: <b>${d.counts.audit_events}</b>`;
+  await loadBackendV07();
+ }catch(e){document.getElementById('sandboxResult').textContent='Backend state is available only when served through FastAPI.'}
+}
+async function sandboxCycle(){
+ try{
+  const d=await fetch('/api/v09/demo-cycle',{method:'POST'}).then(r=>r.json());
+  document.getElementById('sandboxResult').innerHTML=
+   `Cycle completed. Evidence matches: <b>${d.evidence_matches.length}</b>. New anomaly insights: <b>${d.anomaly_result.created.length}</b>.`;
+  await sandboxState();
+ }catch(e){document.getElementById('sandboxResult').textContent='Demo cycle failed.'}
+}
+async function sandboxReset(){
+ if(!confirm('Reset the synthetic LedgerMind sandbox database?')) return;
+ try{
+  const d=await fetch('/api/v09/reset',{method:'POST'}).then(r=>r.json());
+  document.getElementById('sandboxResult').innerHTML='Sandbox reset and demo household recreated.';
+  await loadBackendV07();
+ }catch(e){document.getElementById('sandboxResult').textContent='Sandbox reset failed.'}
+}
+</script>
+
+
+<script>
+async function loadProfiles(){
+ try{
+  const d=await fetch('/api/v010/profiles').then(r=>r.json());
+  document.getElementById('profilesList').innerHTML=d.profiles.map(p=>`
+   <div class=actionItem>
+    <div><b>${p.name}</b><div class=small>${p.profile_type} · ${p.entity_type} · ${p.activity_type}</div></div>
+    <div><span class=ruleTag>${p.tax_regime}</span>${p.gst_hst_registered?'<span class=ruleTag>GST/HST</span>':''}</div>
+   </div>`).join('');
+ }catch(e){document.getElementById('profilesList').innerHTML='<div class=memoryCard>Profiles are available when served through the FastAPI backend.</div>'}
+}
+async function createProfile(){
+ try{
+  const name=document.getElementById('profileName').value.trim()||'New Profile';
+  const profile_type=document.getElementById('profileType').value;
+  const d=await fetch('/api/v010/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,profile_type,province:'Ontario'})}).then(r=>r.json());
+  document.getElementById('profileCreateResult').innerHTML=`Created <b>${d.name}</b> using <b>${d.tax_regime}</b>.`;
+  await loadProfiles();
+ }catch(e){document.getElementById('profileCreateResult').textContent='Profile creation requires the FastAPI backend.'}
+}
+loadProfiles();
+</script>
+
+</body>
+</html>

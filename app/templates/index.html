@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LedgerMind</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:Inter,Arial,sans-serif;margin:0;background:#f4f7fb;color:#172033}
+    header{padding:22px 32px;background:#17365D;color:white;display:flex;justify-content:space-between;align-items:center}
+    h1{margin:0;font-size:24px}.sub{opacity:.8;font-size:13px}
+    main{padding:28px;max-width:1300px;margin:auto}
+    button{background:#17365D;color:white;border:0;border-radius:8px;padding:10px 15px;cursor:pointer}
+    .cards{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:12px;margin:20px 0}
+    .card,.panel{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(20,30,50,.07)}
+    .metric{font-size:27px;font-weight:700;margin-top:6px}
+    .label{font-size:12px;color:#697386}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden}
+    th,td{text-align:left;padding:11px;border-bottom:1px solid #e8edf4;font-size:13px}
+    th{background:#eaf1f8}.route{font-weight:700}.money{text-align:right}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}.panel h3{margin-top:0}
+    .pill{padding:4px 8px;border-radius:999px;background:#edf2f7;font-size:11px}
+    @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <div><h1>LedgerMind</h1><div class="sub">Connected accounting control layer</div></div>
+  <button onclick="syncAll()">Sync connected sources</button>
+</header>
+<main>
+  <div id="cards" class="cards"></div>
+  <div class="grid">
+    <div>
+      <table>
+        <thead><tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th>Route</th><th>Account</th><th></th></tr></thead>
+        <tbody id="tx"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Connected systems</h3>
+      <div id="connectors"></div>
+      <hr style="border:0;border-top:1px solid #eee;margin:18px 0">
+      <h3>Selected transaction</h3>
+      <div id="detail" class="label">Choose a transaction to inspect its evidence and decision.</div>
+    </div>
+  </div>
+</main>
+<script>
+async function j(url,opts){const r=await fetch(url,opts); if(!r.ok) throw new Error(await r.text()); return r.json()}
+function fmt(n){return new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(n)}
+async function refresh(){
+  const d=await j('/api/dashboard');
+  const cards=[['Transactions',d.transactions],['Evidence',d.evidence_items],['Auto-post',d.auto_post],
+    ['Flagged',d.auto_post_flag],['Needs owner',d.owner_question],['Needs review',d.professional_review]];
+  document.getElementById('cards').innerHTML=cards.map(x=>`<div class=card><div class=label>${x[0]}</div><div class=metric>${x[1]}</div></div>`).join('');
+  const tx=await j('/api/transactions');
+  document.getElementById('tx').innerHTML=tx.map(x=>`<tr>
+    <td>${x.date}</td><td>${x.source}</td><td>${x.description}</td>
+    <td class=money>${fmt(x.amount)}</td><td class=route>${x.route||''}</td><td>${x.account||''}</td>
+    <td><button onclick="showTx('${x.id}')">Inspect</button></td></tr>`).join('');
+  const c=await j('/api/connectors');
+  document.getElementById('connectors').innerHTML=Object.entries(c).map(([k,v])=>
+    `<p><span class=pill>${k}</span> <b>${v.status}</b><br><span class=label>${v.production_target}</span></p>`).join('');
+}
+async function syncAll(){await j('/api/sync',{method:'POST'}); await refresh()}
+async function showTx(id){
+  const x=await j('/api/transactions/'+id);
+  let html=`<p><b>${x.transaction.description}</b><br>${fmt(x.transaction.amount)}</p>`;
+  if(x.decision){
+    html+=`<p><b>Route:</b> ${x.decision.route}<br><b>Confidence:</b> ${(x.decision.confidence*100).toFixed(0)}%</p>`;
+    html+=`<p>${x.decision.explanation}</p>`;
+    if(x.evidence?.length) html+=`<p><b>Evidence</b><br>${x.evidence.map(e=>e.attachment_name||e.description).join('<br>')}</p>`;
+    if(x.decision.journal?.length) html+=`<p><b>Journal</b><br>${x.decision.journal.map(l=>`${l.account}: Dr ${l.debit} / Cr ${l.credit}`).join('<br>')}</p>`;
+    if(['auto_post','auto_post_flag'].includes(x.decision.route) && x.decision.journal?.length)
+      html+=`<button onclick="postTx('${id}')">Post to accounting</button>`;
+  }
+  document.getElementById('detail').innerHTML=html;
+}
+async function postTx(id){await j('/api/transactions/'+id+'/post',{method:'POST'}); await refresh(); await showTx(id)}
+refresh();
+</script>
+</body>
+</html>
