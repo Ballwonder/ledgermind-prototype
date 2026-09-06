@@ -1,0 +1,5 @@
+date,description,amount,id
+2027-06-01,Client payment,1500.00,sample-1
+2027-06-02,Staples office supplies,-226.00,sample-2
+2027-06-03,Monthly bank fee,-15.00,sample-3
+2027-06-05,Internet service,-113.00,sample-4

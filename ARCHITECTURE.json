@@ -1,0 +1,44 @@
+{
+  "product": "LedgerMind",
+  "version": "web-mvp-0.1",
+  "architecture": {
+    "sources": [
+      "bank/credit cards",
+      "email/attachments",
+      "payroll",
+      "accounting software"
+    ],
+    "ingestion": "connector adapters + sync/webhook jobs",
+    "core": [
+      "evidence matcher",
+      "fact extractor",
+      "accounting decision engine",
+      "tax/rule engine",
+      "review router",
+      "audit trail"
+    ],
+    "outputs": [
+      "journal entries",
+      "questions",
+      "review packages",
+      "reconciliation",
+      "write-back"
+    ]
+  },
+  "production_connector_targets": {
+    "bank": "Plaid/Flinks-style incremental sync",
+    "email": "Gmail API / Microsoft Graph",
+    "accounting": "QuickBooks Online / Xero",
+    "payroll": "finalized payroll-result adapters"
+  },
+  "security_not_yet_implemented": [
+    "OAuth/token vault",
+    "encryption at rest",
+    "tenant isolation",
+    "RBAC",
+    "webhook signature verification",
+    "idempotency keys",
+    "SOC 2 controls",
+    "production backups"
+  ]
+}
