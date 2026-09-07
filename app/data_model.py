@@ -232,6 +232,25 @@ class AccountingException(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+class OwnerFact(Base):
+    __tablename__ = "owner_facts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    transaction_id: Mapped[int] = mapped_column(ForeignKey("personal_transactions.id"), unique=True, index=True)
+    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    facts_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class TransactionAnalysis(Base):
+    __tablename__ = "transaction_analyses"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    transaction_id: Mapped[int] = mapped_column(ForeignKey("personal_transactions.id"), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    result_json: Mapped[str] = mapped_column(Text)
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 class EventProcessingRecord(Base):
     __tablename__ = "event_processing_records"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
