@@ -23,6 +23,15 @@ class Household(Base):
     currency: Mapped[str] = mapped_column(String(3), default="CAD")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+class AppUser(Base):
+    __tablename__ = "app_users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class FinancialProfile(Base):
     __tablename__ = "financial_profiles"

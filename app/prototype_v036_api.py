@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from datetime import date, datetime
@@ -11,9 +11,11 @@ from .unified_engine_v035 import process_transaction, process_all
 router=APIRouter(tags=["LedgerMind Working Prototype"])
 
 @router.get("/prototype",response_class=HTMLResponse)
-def prototype():
+def prototype(request: Request):
     here=os.path.dirname(__file__)
-    return open(os.path.join(here,"templates","prototype_v038.html"),encoding="utf-8").read()
+    with open(os.path.join(here,"templates","prototype_v038.html"),encoding="utf-8") as template:
+        page=template.read()
+    return page.replace("__CSRF_TOKEN__", request.state.csrf)
 
 @router.get("/api/prototype/state")
 def state():
@@ -153,4 +155,3 @@ def process_everything():
         elif status=="OWNER_QUESTION":summary["owner_question"]+=1
         elif status=="PROFESSIONAL_REVIEW":summary["professional_review"]+=1
     return {"summary":summary,"results":rows}
-

@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import json, os, secrets
 
@@ -10,6 +10,8 @@ from app.engine import decide, balanced
 from app.personal_finance import summarize, recurring_candidates
 from app.connectors.plaid_bank import PlaidBankConnector
 from app.security import encrypt_secret, decrypt_secret
+from app.auth import router as auth_router, authenticate_request, enforce_csrf
+from app.personal_service import set_request_household, reset_request_household
 from app.personal_api import router as personal_v07_router, init_v07
 from app.pipeline_api import router as pipeline_v08_router
 from app.sandbox_api import router as sandbox_v09_router
@@ -43,6 +45,33 @@ from app.connectors.mock_payroll import MockPayrollConnector
 from app.connectors.mock_accounting import MockAccountingConnector
 
 app = FastAPI(title="LedgerMind", version="0.1.0")
+
+PUBLIC_PATHS = {"/health", "/login", "/setup"}
+
+@app.middleware("http")
+async def secure_application(request: Request, call_next):
+    path = request.url.path
+    if path in PUBLIC_PATHS:
+        return await call_next(request)
+    auth = authenticate_request(request)
+    if not auth:
+        if path.startswith("/api/"):
+            return JSONResponse({"detail": "Authentication required"}, status_code=401)
+        return RedirectResponse("/login", status_code=303)
+    user, csrf = auth
+    try:
+        enforce_csrf(request, csrf)
+    except HTTPException as exc:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    request.state.user = user
+    request.state.csrf = csrf
+    context_token = set_request_household(user.household_id)
+    try:
+        return await call_next(request)
+    finally:
+        reset_request_household(context_token)
+
+app.include_router(auth_router)
 
 app.include_router(personal_v07_router)
 app.include_router(pipeline_v08_router)

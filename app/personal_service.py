@@ -2,14 +2,25 @@
 from __future__ import annotations
 from datetime import date, datetime
 from sqlalchemy import select, func
+from contextvars import ContextVar
 from .data_model import (
     SessionLocal, Household, FinancialProfile, Account, Transaction, RecurringObligation,
     Goal, MerchantMemory, Correction, Insight, AuditEvent
 )
 
 FIXED_CATEGORIES={"Housing","Utilities","Insurance","Subscriptions"}
+_request_household: ContextVar[int | None] = ContextVar("request_household", default=None)
+
+def set_request_household(household_id:int | None):
+    return _request_household.set(household_id)
+
+def reset_request_household(token):
+    _request_household.reset(token)
 
 def ensure_demo_household():
+    active_household=_request_household.get()
+    if active_household is not None:
+        return active_household
     with SessionLocal() as s:
         hh=s.scalar(select(Household).limit(1))
         if hh:
