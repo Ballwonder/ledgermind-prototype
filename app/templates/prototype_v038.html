@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LedgerMind Prototype</title>
+<meta name="csrf-token" content="__CSRF_TOKEN__">
 <style>
 :root{--ink:#17202a;--navy:#111827;--muted:#667085;--line:#e5e7eb;--bg:#f4f6f8;--card:#fff;--good:#15803d;--goodbg:#eaf8ef;--warn:#b45309;--warnbg:#fff4df;--bad:#b91c1c;--badbg:#feecec;--blue:#1d4ed8;--bluebg:#eef4ff}
 *{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;background:var(--bg);margin:0;color:var(--ink)}
@@ -18,8 +19,8 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px s
 </head>
 <body>
 <header>
- <div><b>LedgerMind</b> <span class="muted" style="color:#c8d0dc">Dashboard Prototype v0.40</span></div>
- <div class="actions"><button id="analyzeBtn" onclick="processAll()">Analyze All</button></div>
+ <div><b>LedgerMind</b> <span class="muted" style="color:#c8d0dc">Dashboard Prototype v0.41</span></div>
+ <div class="actions"><button id="analyzeBtn" onclick="processAll()">Analyze All</button><button class="secondary" onclick="signOut()">Sign out</button></div>
 </header>
 <main>
 <div class="hero">
@@ -76,6 +77,14 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px s
 </div>
 </main>
 <script>
+const csrfToken=document.querySelector('meta[name="csrf-token"]').content;
+const originalFetch=window.fetch.bind(window);
+window.fetch=(url,options={})=>{
+ const method=(options.method||'GET').toUpperCase();
+ if(!['GET','HEAD','OPTIONS'].includes(method)) options.headers={...(options.headers||{}),'X-CSRF-Token':csrfToken};
+ return originalFetch(url,options);
+};
+async function signOut(){await fetch('/logout',{method:'POST'});location.href='/login';}
 let stateData=null; let activeFilter='ALL';
 function statusBadge(status){
  const map={FULLY_READY:['Ready','good'],NEEDS_ANALYSIS:['Needs analysis','info'],OWNER_QUESTION:['Owner question','warn'],BOOKS_READY_TAX_HOLD:['Tax hold','warn'],PROFESSIONAL_REVIEW:['Professional review','bad'],ERROR:['Error','bad']};
