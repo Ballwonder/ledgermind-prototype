@@ -43,8 +43,15 @@ def _csv_money(value:str)->float:
 class OwnerAnswerPayload(BaseModel):
     profile_id:int|None=None
     answer:str=""
+    selected_category:str|None=None
     facts:dict[str,str|float|bool]|None=None
     remember:bool=True
+
+OWNER_CATEGORY_CHOICES={
+    "Advertising","Bank Fees","Income","Insurance","Meals and Entertainment","Office Supplies",
+    "Personal/Non-business","Professional Fees","Rent","Repairs and Maintenance","Transfer",
+    "Travel","Utilities","Vehicle","Other"
+}
 
 ALLOWED_OWNER_FACTS={
     "transfer_target_account","principal_amount","interest_amount","liability_account","interest_account",
@@ -183,8 +190,12 @@ def state():
         }
 
 @router.post("/api/prototype/import-csv")
-async def import_csv(file:UploadFile=File(...)):
+async def import_csv(file:UploadFile=File(...),profile_id:int=Form(...)):
     hh=ensure_demo_household()
+    with SessionLocal() as s:
+        profile=s.get(FinancialProfile,profile_id)
+        if not profile or profile.household_id!=hh:
+            raise HTTPException(400,"Choose a valid profile for this account")
     raw=await file.read()
     try:
         text=raw.decode("utf-8-sig")
@@ -216,7 +227,7 @@ async def import_csv(file:UploadFile=File(...)):
             ext=(_csv_value(r,"id","transaction id","reference","reference number") or f"csv:{file.filename}:{i}:{d}:{amt}:{desc}")[:250]
             existing=s.scalar(select(Transaction).where(Transaction.household_id==hh,Transaction.provider=="csv",Transaction.provider_transaction_id==ext))
             if existing: continue
-            tx=Transaction(household_id=hh,provider="csv",provider_transaction_id=ext,
+            tx=Transaction(household_id=hh,profile_id=profile_id,provider="csv",provider_transaction_id=ext,
                 tx_date=tx_date,merchant_raw=desc,merchant_normalized=desc,
                 description=desc,amount=amt,category="Uncategorized",category_confidence=0.0)
             s.add(tx);s.flush();made.append(tx.id)
@@ -316,7 +327,10 @@ def process_everything():
 @router.post("/api/prototype/transactions/{tx_id}/answer")
 def answer_owner_question(tx_id:int,payload:OwnerAnswerPayload):
     hh=ensure_demo_household()
-    answer=payload.answer.strip()
+    selected_category=(payload.selected_category or "").strip()
+    if selected_category and selected_category not in OWNER_CATEGORY_CHOICES:
+        raise HTTPException(400,"Choose a valid category")
+    answer=payload.answer.strip() or (f"Owner selected category: {selected_category}" if selected_category else "")
     facts={k:v for k,v in (payload.facts or {}).items() if k in ALLOWED_OWNER_FACTS and v not in (None,"")}
     if not answer and not facts:
         raise HTTPException(400,"Please provide the requested information")
@@ -325,7 +339,7 @@ def answer_owner_question(tx_id:int,payload:OwnerAnswerPayload):
         if not tx or tx.household_id!=hh:
             raise HTTPException(404,"Transaction not found")
         if tx.profile_id is None and payload.profile_id is None:
-            raise HTTPException(400,"Select the financial profile this transaction belongs to")
+            raise HTTPException(400,"This transaction's source account needs a profile before it can be categorized")
         if payload.profile_id is not None:
             profile=s.get(FinancialProfile,payload.profile_id)
             if not profile or profile.household_id!=hh:
@@ -334,6 +348,9 @@ def answer_owner_question(tx_id:int,payload:OwnerAnswerPayload):
         apply_profile_decision(hh,tx_id,payload.profile_id,learn=payload.remember)
     with SessionLocal() as s:
         tx=s.get(Transaction,tx_id)
+        if selected_category:
+            tx.category=selected_category
+            tx.category_confidence=1.0
         saved=s.scalar(select(OwnerFact).where(OwnerFact.household_id==hh,OwnerFact.transaction_id==tx_id))
         prior_facts=json.loads(saved.facts_json or "{}") if saved else {}
         combined_facts={**prior_facts,**facts}
@@ -363,7 +380,8 @@ def answer_owner_question(tx_id:int,payload:OwnerAnswerPayload):
         s.add(AuditEvent(
             household_id=hh,event_type="owner_question_answered",entity_type="transaction",
             entity_id=str(tx_id),detail_json=json.dumps({
-                "profile_id":payload.profile_id,"answer":explanation,"facts":facts,"remember":payload.remember
+                "profile_id":payload.profile_id,"answer":explanation,"selected_category":selected_category,
+                "facts":facts,"remember":payload.remember
             })
         ))
         s.commit()
