@@ -21,13 +21,6 @@ class ExtractedDocument:
     supply_tax_status:str|None=None
     extraction_confidence:float=0.0
     field_confidence:dict|None=None
-    gst_hst_amount:float|None=None
-    tax_disclosure_status:str="not_found"
-    donation_indicator:bool=False
-    charity_or_nonprofit_indicator:bool=False
-    subtotal_amount:float|None=None
-    tax_rate:float|None=None
-    tax_calculation_basis:str|None=None
 
 def _money_candidates(text:str):
     vals=[]
@@ -72,33 +65,9 @@ def extract_document_fields(subject:str|None,body:str|None):
     if rm:
         reg=re.sub(r'\s+','',rm.group(1).upper());field_conf["supplier_gst_hst_number"]=.99
 
-    tax_amount=None
-    subtotal=None
-    subtotal_match=re.search(r'(?i)\bsub[- ]?total\s*[:\-]?\s*(?:CAD\s*)?\$?\s*(\d[\d,]*\.\d{2})',text)
-    if subtotal_match:
-        subtotal=float(subtotal_match.group(1).replace(",",""));field_conf["subtotal_amount"]=.98
-    rate_match=re.search(r'(?i)\b(?:HST|GST|GST/HST)\s*(?:@|at)?\s*(\d{1,2}(?:\.\d+)?)\s*%',text)
-    tax_rate=float(rate_match.group(1))/100 if rate_match else None
-    tax_match=re.search(r'(?i)\b(?:HST|GST|GST/HST)\b\s*(?:amount|total)?\s*[:\-]?\s*(?:CAD\s*)?\$?\s*(\d[\d,]*\.\d{2})',text)
-    tax_included=bool(re.search(r'(?i)(?:includes?|including|incl\.?|tax[- ]included).{0,18}\b(?:HST|GST|GST/HST)\b|\b(?:HST|GST|GST/HST)\b.{0,18}(?:included|incl\.?)(?:\s|$)',text))
-    tax_additional=bool(re.search(r'(?i)(?:plus|add|additional|extra|\+)\s*(?:applicable\s*)?(?:HST|GST|GST/HST)|(?:HST|GST|GST/HST)\s*(?:extra|additional|applies)',text))
-    if tax_match:
-        tax_amount=float(tax_match.group(1).replace(",",""))
-        gst_ind=True;tax_status="explicit_amount";tax_basis="receipt_tax_line";field_conf["gst_hst_indication"]=.99;field_conf["gst_hst_amount"]=.99
-    elif subtotal is not None and total is not None and total>subtotal and re.search(r'(?i)\b(?:HST|GST|GST/HST|tax)\b',text):
-        tax_amount=round(total-subtotal,2)
-        gst_ind=True;tax_status="subtotal_total_difference";tax_basis="labelled_subtotal_to_total_difference";field_conf["gst_hst_indication"]=.90;field_conf["gst_hst_amount"]=.85
-    elif tax_included:
-        gst_ind=True;tax_status="included_in_total";tax_basis="tax_included_wording";field_conf["gst_hst_indication"]=.95
-    elif tax_additional:
-        gst_ind=True;tax_status="tax_stated_additional";tax_basis="plus_tax_wording";field_conf["gst_hst_indication"]=.90
-    elif reg:
-        gst_ind=None;tax_status="registration_number_only";tax_basis="registration_number_only"
-    else:
-        gst_ind=None;tax_status="not_found";tax_basis=None
-
-    donation=bool(re.search(r'(?i)\b(?:official donation receipt|charitable donation|eligible amount of (?:the )?gift|donation)\b',text))
-    charity_nonprofit=donation or bool(re.search(r'(?i)\b(?:registered charity|charitable registration|non[- ]?profit|not[- ]for[- ]profit)\b',text))
+    gst_ind = None
+    if re.search(r'(?i)\b(?:HST|GST|GST/HST)\b',text):
+        gst_ind=True;field_conf["gst_hst_indication"]=.95
 
     buyer=None
     bm=re.search(r'(?im)^(?:bill\s*to|customer|client|buyer)\s*[:\-]\s*(.+)$',text)
@@ -122,9 +91,6 @@ def extract_document_fields(subject:str|None,body:str|None):
         gst_hst_indication=gst_ind,supplier_gst_hst_number=reg,
         buyer_name=buyer,description=desc,payment_terms=terms,
         extraction_confidence=round(base,3),field_confidence=field_conf
-        ,gst_hst_amount=tax_amount,tax_disclosure_status=tax_status,
-        donation_indicator=donation,charity_or_nonprofit_indicator=charity_nonprofit,
-        subtotal_amount=subtotal,tax_rate=tax_rate,tax_calculation_basis=tax_basis
     )
 
 def _norm(s): return re.sub(r'[^a-z0-9]+',' ',(s or "").lower()).strip()

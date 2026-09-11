@@ -1,6 +1,5 @@
 
-from fastapi import APIRouter, HTTPException
-import os
+from fastapi import APIRouter
 from datetime import date
 from sqlalchemy import select, delete
 from .data_model import (
@@ -15,8 +14,6 @@ router=APIRouter(prefix="/api/v09",tags=["LedgerMind v0.9 sandbox"])
 @router.post("/reset")
 def reset_sandbox():
     # Sandbox-only destructive reset.
-    if os.getenv("RENDER"):
-        raise HTTPException(404, "Sandbox reset is unavailable in deployed environments")
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     hh=ensure_demo_household()
